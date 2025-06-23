@@ -38,4 +38,9 @@ export class MessageController {
             parseInt(withUserId),
         );
     }
+
+    @Get()
+    async getAllConversations(@GetUser() user: User) {
+        return this.messageService.getAllMessagesForUser(user.id);
+    }
 }

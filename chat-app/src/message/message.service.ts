@@ -40,4 +40,16 @@ export class MessageService {
             order: { timestamp: 'ASC' },
         });
     }
+
+    async getAllMessagesForUser(userId: number) {
+        return this.messageRepo.find({
+            where: [
+                { sender: { id: userId } },
+                { receiver: { id: userId } },
+            ],
+            relations: ['sender', 'receiver'],
+            order: { timestamp: 'ASC' },
+        });
+    }
+
 }
