@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Chat App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+
+<body class="bg-gray-100 p-6 font-sans">
+
+    <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow space-y-4">
+        <h1 class="text-2xl font-bold text-center">🔐 Authentification</h1>
+
+        <div class="flex flex-col gap-2">
+            <input type="text" id="username" placeholder="Nom d'utilisateur" class="border rounded px-3 py-2" />
+            <input type="password" id="password" placeholder="Mot de passe" class="border rounded px-3 py-2" />
+            <div class="flex gap-2">
+                <button onclick="register()" class="bg-green-500 text-white px-4 py-2 rounded">S'inscrire</button>
+                <button onclick="login()" class="bg-blue-500 text-white px-4 py-2 rounded">Se connecter</button>
+            </div>
+        </div>
+
+        <div id="chatSection" class="hidden">
+            <h2 class="text-xl font-semibold mt-4">💬 Discussion</h2>
+
+            <div class="flex items-center justify-between">
+                <input id="receiverId" type="number" placeholder="ID du destinataire"
+                    class="border rounded px-3 py-2 w-1/2" />
+                <span class="text-sm text-gray-500">Messages non lus : <span id="unread"
+                        class="font-bold text-red-500">0</span></span>
+            </div>
+
+            <div class="h-48 overflow-y-auto border rounded p-2 mt-2 text-sm bg-gray-50" id="chatBox"></div>
+
+            <div class="flex gap-2 mt-2">
+                <input id="message" type="text" placeholder="Votre message..."
+                    class="border rounded px-3 py-2 flex-1" />
+                <button onclick="sendMessage()" class="bg-blue-600 text-white px-4 py-2 rounded">Envoyer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = null;
+        let userId = null;
+        let unreadCount = 0;
+        let socket = null;
+
+        const API = 'http://localhost:3000'; // adapte au besoin
+
+        async function register() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const res = await fetch(`${API}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password }),
+            });
+
+            const data = await res.json();
+            alert(data.message || JSON.stringify(data));
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const res = await fetch(`${API}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password }),
+            });
+
+            const data = await res.json();
+
+            if (data.access_token) {
+                token = data.access_token;
+                await getProfile();
+                connectSocket();
+                document.getElementById('chatSection').classList.remove('hidden');
+            } else {
+                alert("Erreur d'authentification");
+            }
+        }
+
+        async function getProfile() {
+            const res = await fetch(`${API}/user/profile`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await res.json();
+            userId = data.id;
+        }
+
+        function connectSocket() {
+            socket = io(API);
+
+            socket.on(`new_message_${userId}`, (message) => {
+                unreadCount++;
+                document.getElementById('unread').textContent = unreadCount;
+                addMessageToBox(`📩 ${message.sender.username} : ${message.content}`);
+            });
+        }
+
+        function sendMessage() {
+            const content = document.getElementById('message').value;
+            const receiverId = parseInt(document.getElementById('receiverId').value);
+
+            if (!socket || !receiverId || !content) {
+                alert("Champ manquant ou socket non connecté");
+                return;
+            }
+
+            socket.emit('send_message', {
+                senderId: userId,
+                receiverId,
+                content,
+            });
+
+            addMessageToBox(`🧑‍💻 Moi : ${content}`);
+            document.getElementById('message').value = '';
+        }
+
+        function addMessageToBox(text) {
+            const box = document.getElementById('chatBox');
+            const line = document.createElement('div');
+            line.textContent = text;
+            box.appendChild(line);
+            box.scrollTop = box.scrollHeight;
+        }
+    </script>
+</body>
+
+</html>
