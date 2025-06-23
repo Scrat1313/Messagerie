@@ -30,17 +30,6 @@ export class MessageService {
         return this.messageRepo.save(message);
     }
 
-
-    async getConversation(userA: number, userB: number) {
-        return this.messageRepo.find({
-            where: [
-                { sender: { id: userA }, receiver: { id: userB } },
-                { sender: { id: userB }, receiver: { id: userA } },
-            ],
-            order: { timestamp: 'ASC' },
-        });
-    }
-
     async getConversationBetween(userId1: number, userId2: number) {
         return this.messageRepo.find({
             where: [
@@ -51,5 +40,4 @@ export class MessageService {
             order: { timestamp: 'ASC' },
         });
     }
-
 }

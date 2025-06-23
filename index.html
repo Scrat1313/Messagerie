@@ -29,9 +29,16 @@
             <div class="flex items-center justify-between">
                 <input id="receiverId" type="number" placeholder="ID du destinataire"
                     class="border rounded px-3 py-2 w-1/2" />
-                <span class="text-sm text-gray-500">Messages non lus : <span id="unread"
-                        class="font-bold text-red-500">0</span></span>
+                <span class="text-sm text-gray-500">
+                    Messages non lus :
+                    <span id="unread" class="font-bold text-red-500">0</span>
+                </span>
             </div>
+
+            <!-- Bouton pour charger l'historique -->
+            <button onclick="loadConversation()" class="text-sm text-blue-600 underline hover:text-blue-800 transition">
+                📜 Charger l'historique
+            </button>
 
             <div class="h-48 overflow-y-auto border rounded p-2 mt-2 text-sm bg-gray-50" id="chatBox"></div>
 
@@ -49,7 +56,7 @@
         let unreadCount = 0;
         let socket = null;
 
-        const API = 'http://localhost:3000'; // adapte au besoin
+        const API = 'http://localhost:3000'; // Change si besoin
 
         async function register() {
             const username = document.getElementById('username').value;
@@ -130,6 +137,36 @@
             line.textContent = text;
             box.appendChild(line);
             box.scrollTop = box.scrollHeight;
+        }
+
+        async function loadConversation() {
+            const receiverId = parseInt(document.getElementById('receiverId').value);
+            if (!receiverId) {
+                alert("Veuillez entrer un ID de destinataire valide.");
+                return;
+            }
+
+            const res = await fetch(`${API}/messages/${receiverId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            const messages = await res.json();
+
+            const box = document.getElementById('chatBox');
+            box.innerHTML = ''; // Vider la boîte de messages
+
+            // Réinitialiser compteur de non lus
+            unreadCount = 0;
+            document.getElementById('unread').textContent = unreadCount;
+
+            // Afficher les messages dans l'ordre
+            messages.forEach((msg) => {
+                const isMine = msg.sender.id === userId;
+                const label = isMine ? '🧑‍💻 Moi' : `📩 ${msg.sender.username}`;
+                addMessageToBox(`${label} : ${msg.content}`);
+            });
         }
     </script>
 </body>
